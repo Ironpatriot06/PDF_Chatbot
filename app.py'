@@ -1,0 +1,52 @@
+
+import os
+import streamlit as st
+from pdf_utils import load_pdf
+from embed_utils import embed_and_store
+from chatbot import answer_question, find_similar_docs
+import google.generativeai as genai
+
+st.set_page_config(page_title="PDF Chatbot", layout="wide")
+st.title("📄 Chat with your PDF")
+
+# Initialize Gemini (do this once at the start)
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+
+if uploaded_file:
+    with st.spinner("Reading and processing the PDF..."):
+        try:
+            texts = load_pdf(uploaded_file)
+            stored_ids = embed_and_store(texts)
+            st.success(f"✅ PDF processed and stored! {len(stored_ids)} chunks saved.")
+        except Exception as e:
+            st.error(f"Error processing PDF: {str(e)}")
+
+user_question = st.text_input("Ask a question from the PDF:")
+
+if user_question:
+    with st.spinner("Searching for answers..."):
+        try:
+            # Correct embedding call
+            embedding_response = genai.embed_content(
+                model="models/embedding-001",
+                content=user_question,
+                task_type="retrieval_query"  # Important for question embeddings
+            )
+            query_embedding = embedding_response['embedding']
+
+            matched_docs = find_similar_docs(query_embedding)
+            response = answer_question(matched_docs, user_question)
+
+            st.markdown("### Answer")
+            st.write(response)
+
+            # Show relevant sections (optional)
+            with st.expander("See relevant sections"):
+                for doc in matched_docs:
+                    st.write(doc['text'])
+                    st.divider()
+
+        except Exception as e:
+

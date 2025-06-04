@@ -1,0 +1,71 @@
+import os
+from pymongo import MongoClient
+import google.generativeai as genai
+import uuid
+
+# Configure Gemini
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Connect to MongoDB
+client = MongoClient(os.getenv("MONGO_URI"))  # make sure this is set
+db = client["pdf_chatbot"]
+collection = db["embeddings"]
+
+# Function to keep only 2 most recent PDFs
+def cleanup_old_pdfs():
+    all_pdfs = collection.aggregate([
+        {"$group": {"_id": "$source_pdf", "latest_id": {"$max": "$_id"}}},
+        {"$sort": {"latest_id": -1}}
+    ])
+
+    all_pdfs = list(all_pdfs)
+    if len(all_pdfs) > 2:
+        old_pdfs = [doc["_id"] for doc in all_pdfs[2:]]
+        collection.delete_many({"source_pdf": {"$in": old_pdfs}})
+        print(f"Deleted old PDFs: {old_pdfs}")
+
+# Main embedding and storage function
+def embed_and_store(text_chunks, pdf_name):
+    stored_ids = []
+
+    # Delete older PDFs if needed
+    cleanup_old_pdfs()
+
+    for idx, chunk in enumerate(text_chunks):
+        try:
+            embedding_response = genai.embed_content(
+                model="models/embedding-001",
+                content=chunk,
+                task_type="retrieval_document"
+            )
+            embedding = embedding_response['embedding']
+
+            doc_id = str(uuid.uuid4())
+
+            doc = {
+                "_id": doc_id,
+                "text": chunk,
+                "embedding": embedding,
+                "chunk_index": idx,
+                "source_pdf": pdf_name
+            }
+
+            collection.insert_one(doc)
+            stored_ids.append(doc_id)
+
+        except Exception as e:
+            print(f"Error embedding/storing chunk: {e}")
+
+    return stored_ids
+
+
+
+
+
+
+
+
+
+
+
+
