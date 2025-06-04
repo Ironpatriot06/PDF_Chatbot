@@ -28,19 +28,31 @@ cd Chatbot
 python3 -m venv venv
 source venv/bin/activate   # On Mac/Linux
 # or
+
 venv\Scripts\activate      # On Windows
+
+
 3. Install Dependencies
+   
 pip install -r requirements.txt
-4. Create a .env File
+
+5. Create a .env File
+   
 Add the following environment variables in a file named .env in the root directory:
 
+
 GOOGLE_API_KEY=your_gemini_api_key
+
 MONGO_URI=your_mongodb_connection_uri
+
 🚀 Running the App
 
 streamlit run app.py
+
 This will launch the Streamlit app in your browser.
+
 Upload a PDF and start chatting with it.
+
 📦 Project Structure
 
 pdf_chatbot/
