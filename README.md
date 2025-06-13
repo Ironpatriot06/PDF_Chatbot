@@ -51,13 +51,6 @@ To run Streamlit:
 streamlit run app.py
 ```
 
-Project Structure is:
-pdf_chatbot/
-├── app.py              # Main Streamlit app file
-├── utils.py            # Helper functions (e.g., for PDF processing)
-├── vectorstore/        # Chroma vector database folder
-├── requirements.txt    # Python dependencies
-└── .env                # Environment variables (API key)
 
 
 🧪 How It Works
